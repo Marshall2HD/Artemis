@@ -13,12 +13,5 @@ RUN git clone https://github.com/Marshall2HD/AeSBot.git .
 # Install Python dependencies from requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the initialization script and config template
-COPY init-config.sh /bot/
-COPY config.toml.sample /bot/
-
-# Make sure the init script is executable
-RUN chmod +x /bot/init-config.sh
-
 # Run the initialization script and then start the Python script
-CMD ["/bin/sh", "-c", "/bot/init-config.sh && python bot.py"]
+CMD ["/bin/sh", "-c", "init-config.sh && python bot.py"]
