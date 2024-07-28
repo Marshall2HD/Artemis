@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the initialization script and config template
 COPY init-config.sh /bot/
-COPY config.toml.template /bot/
+COPY config.toml.sample /bot/
 
 # Make sure the init script is executable
 RUN chmod +x /bot/init-config.sh
