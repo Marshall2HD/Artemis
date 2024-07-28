@@ -9,4 +9,4 @@ services:
       ADMIN_IDS: "123456789,"
     # Optional: Mount a volume if you want to use a local config.toml file
     volumes:
-      - ./docker/discord-bots/AeS-Bot/config.toml:/bot/config.toml
+      - ./docker/discord-bots/AeS-Bot/:/bot/
