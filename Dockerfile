@@ -1,11 +1,11 @@
 # Use the latest available version of Python 3.x slim variant
 FROM python:latest
 
-# Set the working directory to /discord-bot
-WORKDIR /discord-bot
+# Set the working directory to /bot
+WORKDIR /bot
 
 # Install git (required if you're cloning a repo)
-RUN apt-get update && apt-get install -y git
+RUN apt-get update && apt-get install -y git gettext-base
 
 # Clone the repository into the working directory
 RUN git clone https://github.com/Marshall2HD/AeSBot.git .
@@ -13,5 +13,12 @@ RUN git clone https://github.com/Marshall2HD/AeSBot.git .
 # Install Python dependencies from requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Set the default command to run the Python script
-CMD ["python", "bot.py"]
+# Copy the initialization script and config template
+COPY init-config.sh /bot/
+COPY config.toml.template /bot/
+
+# Make sure the init script is executable
+RUN chmod +x /bot/init-config.sh
+
+# Run the initialization script and then start the Python script
+CMD ["/bin/sh", "-c", "/bot/init-config.sh && python bot.py"]

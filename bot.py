@@ -1,25 +1,12 @@
-import asyncio, os, toml, discord
+import asyncio
+import toml
+import discord
 from discord.ext import commands
 from discord import app_commands
 
-def load_config():
-    # Try to load environment variables
-    bot_token = os.getenv("DISCORD_BOT_TOKEN")
-    status_message = os.getenv("DISCORD_STATUS_MESSAGE", "playing: Default Game")
-    admin_ids = os.getenv("DISCORD_ADMIN_IDS", "").split(",")
-    if admin_ids:
-        admin_ids = list(map(int, admin_ids))
-    
-    # Fallback to loading from config.toml if environment variables are not set
-    if not bot_token or not status_message:
-        config = toml.load("config.toml")
-        bot_token = bot_token or config["discord_settings"].get("bot_token")
-        status_message = status_message or config["discord_settings"].get("status_message", "playing: Default Game")
-        admin_ids = admin_ids or list(map(int, config["discord_settings"].get("admin_ids", [])))
-    
-    return bot_token, status_message, admin_ids
 
-bot_token, status_message, admin_ids = load_config()
+# Load the configuration from TOML file
+config = toml.load("config.toml")
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -31,7 +18,8 @@ async def on_ready():
     await bot.tree.sync()
     print("Commands synced successfully.")
 
-    # Set activity based on configuration
+    # Set activity based on TOML configuration
+    status_message = config["discord_settings"].get("status_message", "playing: Default Game")
     activity_parts = status_message.split(": ", 1)
     if len(activity_parts) != 2:
         print(f"Invalid status_message format: {status_message}")
@@ -57,7 +45,8 @@ async def on_ready():
 @bot.tree.command(name="setactivity", description="Change the bot's activity status")
 @app_commands.describe(activity_type="Type of activity: playing, streaming, listening, watching, custom", name="Name of the activity")
 async def set_activity(interaction: discord.Interaction, activity_type: str, name: str):
-    if interaction.user.id not in admin_ids:
+    allowed_user_ids = config["discord_settings"].get("admin_ids", [])
+    if interaction.user.id not in allowed_user_ids:
         await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
         return
 
@@ -77,11 +66,14 @@ async def set_activity(interaction: discord.Interaction, activity_type: str, nam
 
     await bot.change_presence(activity=activity)
 
-    # Update the status message environment variable
-    os.environ["DISCORD_STATUS_MESSAGE"] = f"{activity_type}: {name}"
+    # Save the activity status to the configuration file
+    config["discord_settings"]["status_message"] = f"{activity_type}: {name}"
+    with open("config.toml", "w") as f:
+        toml.dump(config, f)
+
     await interaction.response.send_message(f"Activity updated to {activity_type} '{name}'.", ephemeral=True)
 
 async def main():
-    await bot.start(bot_token)
+    await bot.start(config["discord_settings"]["bot_token"])
 
 asyncio.run(main())
