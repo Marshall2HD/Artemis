@@ -1,0 +1,5 @@
+[discord_settings]
+bot_token = ""
+client_id = 123456789
+status_message = "custom: running on docker"
+admin_ids = [ 123456789,]
