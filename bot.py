@@ -6,7 +6,7 @@ from discord import app_commands
 
 
 # Load the configuration from TOML file
-config = toml.load("data/config.toml")
+config = toml.load("/data/config.toml")
 
 intents = discord.Intents.default()
 intents.message_content = True
