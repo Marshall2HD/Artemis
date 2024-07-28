@@ -14,7 +14,7 @@ RUN git clone https://github.com/Marshall2HD/AeSBot.git .
 COPY config.toml.sample /bot/
 
 # Install Python dependencies from requirements.txt
-RUN pip install --no-cache-dir -r AeSBot/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Generate the config file and then run the bot
 ENTRYPOINT ["/bin/sh", "-c", "envsubst < /bot/config.toml.sample > /bot/config.toml && python /bot/bot.py"]
