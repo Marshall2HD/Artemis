@@ -1,0 +1,4 @@
+[discord_settings]
+bot_token = "${BOT_TOKEN}"
+status_message = "${STATUS_MESSAGE}"
+admin_ids = ["${ADMIN_IDS}"]

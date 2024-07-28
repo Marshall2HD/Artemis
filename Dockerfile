@@ -2,7 +2,7 @@
 FROM python:latest
 
 # Set the working directory to /discord-bot
-WORKDIR /bot
+WORKDIR /discord-bot
 
 # Install git (required if you're cloning a repo)
 RUN apt-get update && apt-get install -y git
