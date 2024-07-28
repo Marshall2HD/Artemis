@@ -1,5 +1,5 @@
-# Stage 1: Build the image with the repository content
-FROM python:latest AS build
+# Use the latest available version of Python 3.x slim variant
+FROM python:latest
 
 # Set the working directory to /bot
 WORKDIR /bot
@@ -10,23 +10,11 @@ RUN apt-get update && apt-get install -y git gettext-base
 # Clone the repository into the working directory
 RUN git clone https://github.com/Marshall2HD/AeSBot.git .
 
-# Install Python dependencies from requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Replace placeholders in config.toml.sample with environment variable values
-RUN envsubst < config.toml.sample > config.toml
-
-# Stage 2: Final image to run the bot
-FROM python:latest
-
-# Set the working directory to /bot
-WORKDIR /bot
-
-# Copy the files from the build stage
-COPY --from=build /bot /bot
+# Copy the configuration sample file to /bot/
+COPY config.toml.sample /bot/
 
 # Install Python dependencies from requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r AeSBot/requirements.txt
 
-# Run the Python script
-CMD ["python", "bot.py"]
+# Generate the config file and then run the bot
+ENTRYPOINT ["/bin/sh", "-c", "envsubst < /bot/config.toml.sample > /bot/config.toml && python /bot/bot.py"]
