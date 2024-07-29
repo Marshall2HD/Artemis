@@ -1,29 +1,28 @@
-# Use the latest Python 3.x slim variant
+# Use the latest available version of Python
 FROM python:latest
 
-# Create the /data directory for configuration and application files
+# Create the /data directory
 RUN mkdir /data
 
-# Set the working directory for configuration files
+# Set the working directory to /data
 WORKDIR /data
 
-# Copy and install Python dependencies
-COPY requirements.txt /data/
+# Copy requirements.txt and install Python dependencies
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files and configuration template
+# Copy the rest of the application files
 COPY bot.py /app/
 COPY config.toml.sample /data/
 
-# Install gettext-base for envsubst
+# Install gettext for envsubst command
 RUN apt-get update && apt-get install -y gettext-base
 
-# Copy the entrypoint script and make it executable
-COPY entrypoint.sh /data/
-RUN chmod +x /data/entrypoint.sh
+# Copy the startup script
+COPY start.sh /usr/local/bin/start.sh
 
-# Set the working directory for the application
-WORKDIR /data
+# Set the working directory to /app
+WORKDIR /app
 
-# Set the entrypoint to the script
-ENTRYPOINT ["entrypoint.sh"]
+# Use the startup script to set up the config and run the application
+CMD ["/usr/local/bin/start.sh"]
