@@ -19,7 +19,7 @@ async def on_ready():
     print("Commands synced successfully.")
 
     # Set activity based on TOML configuration
-    status_message = config["discord_settings"].get("status_message", "playing: Default Game")
+    status_message = config["discord_settings"].get("status_message", "custom: uwu")
     activity_parts = status_message.split(": ", 1)
     if len(activity_parts) != 2:
         print(f"Invalid status_message format: {status_message}")
@@ -39,8 +39,17 @@ async def on_ready():
     else:
         activity_type_enum = activity_types.get(activity_type, discord.ActivityType.playing)
         activity = discord.Activity(type=activity_type_enum, name=name)
-    
-    await bot.change_presence(activity=activity)
+
+    # Set status based on TOML configuration
+    status_type = config["discord_settings"].get("status_ind", "online").lower()
+    status_types = {
+        "online": discord.Status.online,
+        "idle": discord.Status.idle,
+        "dnd": discord.Status.dnd,
+    }
+    status = status_types.get(status_type, discord.Status.online)
+
+    await bot.change_presence(activity=activity, status=status)
 
 @bot.tree.command(name="setactivity", description="Change the bot's activity status")
 @app_commands.describe(activity_type="Type of activity: playing, streaming, listening, watching, custom", name="Name of the activity")
@@ -73,6 +82,35 @@ async def set_activity(interaction: discord.Interaction, activity_type: str, nam
 
     await interaction.response.send_message(f"Activity updated to {activity_type} '{name}'.", ephemeral=True)
 
+@bot.tree.command(name="setstatus", description="Change the bot's status")
+@app_commands.describe(status="Status to set: online, idle, dnd")
+async def set_status(interaction: discord.Interaction, status: str):
+    allowed_user_ids = config["discord_settings"].get("admin_ids", [])
+    if interaction.user.id not in allowed_user_ids:
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
+
+    status_types = {
+        "online": discord.Status.online,
+        "idle": discord.Status.idle,
+        "dnd": discord.Status.dnd,
+    }
+
+    status_value = status.lower()
+    if status_value not in status_types:
+        await interaction.response.send_message(f"Invalid status: {status}. Please use online, idle, or dnd.", ephemeral=True)
+        return
+
+    await bot.change_presence(status=status_types[status_value])
+
+    # Save the status to the configuration file
+    config["discord_settings"]["status_ind"] = status_value
+    with open(config_path, "w") as f:
+        toml.dump(config, f)
+
+    await interaction.response.send_message(f"Status updated to {status}.", ephemeral=True)
+
 async def main():
     await bot.start(config["discord_settings"]["bot_token"])
+
 asyncio.run(main())
