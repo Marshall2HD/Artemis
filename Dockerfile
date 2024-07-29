@@ -28,5 +28,5 @@ ENTRYPOINT ["/data/entrypoint.sh"]
 # Set the working directory to /app
 WORKDIR /app
 
-# Run the Python script
+# Default command to run the Python script
 CMD ["python", "bot.py"]
