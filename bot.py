@@ -14,7 +14,7 @@ bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 # Global variables to store the current status and activity
 current_activity = None
-current_status = discord.Status.online
+current_status = None
 
 async def update_presence():
     global current_activity, current_status
@@ -67,7 +67,7 @@ async def on_ready():
     await bot.tree.sync()
     print("Commands synced successfully.")
 
-    # Initialize the current activity and status
+    # Initialize the current activity and status based on config
     await update_presence()
 
     # Start the presence checker task
@@ -138,8 +138,8 @@ async def set_status(interaction: discord.Interaction, status: str):
 
 async def main():
     global current_activity, current_status
-    current_activity = None
-    current_status = discord.Status.online
+    # Initialize activity and status based on config
+    await update_presence()
     await bot.start(config["discord_settings"]["bot_token"])
 
 asyncio.run(main())
