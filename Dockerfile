@@ -22,8 +22,5 @@ RUN apt-get update && apt-get install -y gettext-base
 COPY entrypoint.sh /data/
 RUN chmod +x /data/entrypoint.sh
 
-# Set the working directory for the application
-WORKDIR /app
-
 # Set the entrypoint to the script
 ENTRYPOINT ["/data/entrypoint.sh"]
