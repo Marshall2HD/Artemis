@@ -26,4 +26,4 @@ RUN chmod +x /data/entrypoint.sh
 WORKDIR /data
 
 # Set the entrypoint to the script
-ENTRYPOINT ["sh", "/data/entrypoint.sh"]
+ENTRYPOINT ["entrypoint.sh"]
