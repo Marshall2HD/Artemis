@@ -4,9 +4,9 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-
 # Load the configuration from TOML file
-config = toml.load("/data/config.toml")
+config_path = "/data/config.toml"
+config = toml.load(config_path)
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -68,12 +68,11 @@ async def set_activity(interaction: discord.Interaction, activity_type: str, nam
 
     # Save the activity status to the configuration file
     config["discord_settings"]["status_message"] = f"{activity_type}: {name}"
-    with open("config.toml", "w") as f:
+    with open(config_path, "w") as f:
         toml.dump(config, f)
 
     await interaction.response.send_message(f"Activity updated to {activity_type} '{name}'.", ephemeral=True)
 
 async def main():
     await bot.start(config["discord_settings"]["bot_token"])
-
 asyncio.run(main())
