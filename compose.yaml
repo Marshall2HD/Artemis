@@ -3,10 +3,5 @@ services:
     container_name: AeS-Bot
     build:
       context: https://github.com/Marshall2HD/AeSBot.git
-    environment:
-      BOT_TOKEN: "your_bot_token"
-      TATUS_MESSAGE: "custom: using docker env"
-      ADMIN_IDS: "123456789,"
-    # Optional: Mount a volume if you want to use a local config.toml file
     volumes:
       - ./docker/discord-bots/AeS-Bot:/data
