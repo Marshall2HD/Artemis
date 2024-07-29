@@ -23,7 +23,7 @@ COPY entrypoint.sh /data/
 RUN chmod +x /data/entrypoint.sh
 
 # Set the working directory for the application
-WORKDIR /app
+WORKDIR /data
 
 # Set the entrypoint to the script
 ENTRYPOINT ["sh", "/data/entrypoint.sh"]
