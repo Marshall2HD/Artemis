@@ -15,9 +15,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY bot.py /app/
 COPY config.toml.sample /data/
 
-# Replace placeholders in config.toml.sample with environment variable values
-RUN apt-get update && apt-get install -y gettext-base && \
-    envsubst < /data/config.toml.sample > /data/config.toml
+# Install gettext-base for envsubst
+RUN apt-get update && apt-get install -y gettext-base
+
+# Copy the entrypoint script and make it executable
+COPY entrypoint.sh /data/
+RUN chmod +x /data/entrypoint.sh
+
+# Set the entrypoint to the script
+ENTRYPOINT ["/data/entrypoint.sh"]
 
 # Set the working directory to /app
 WORKDIR /app
