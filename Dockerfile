@@ -19,6 +19,9 @@ COPY start.sh /app/
 # Install gettext for envsubst command
 RUN apt-get update && apt-get install -y gettext-base
 
+# Ensure the startup script is executable
+RUN chmod +x /app/start.sh
+
 # Set the working directory to /app
 WORKDIR /app
 
