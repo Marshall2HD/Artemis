@@ -14,10 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application files
 COPY bot.py /app/
 COPY config.toml.sample /data/
-COPY start.py /app/
 
 # Set the working directory to /app
 WORKDIR /app
 
-# Use the combined Python script to generate config and run the application
-CMD ["python", "start.py"]
+# Run the Python script
+CMD ["python", "bot.py"]
