@@ -23,4 +23,4 @@ COPY entrypoint.sh /data/
 RUN chmod +x /data/entrypoint.sh
 
 # Set the entrypoint to the script
-ENTRYPOINT ["/data/entrypoint.sh"]
+ENTRYPOINT ["entrypoint.sh"]
