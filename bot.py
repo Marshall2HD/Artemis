@@ -18,8 +18,8 @@ async def on_ready():
     await bot.tree.sync()
     print("Commands synced successfully.")
 
-    # Set activity based on TOML configuration
-    status_message = config["discord_settings"].get("status_message", "custom: uwu")
+    # Load activity and status from TOML configuration
+    status_message = config["discord_settings"].get("status_message", "playing: Default Game")
     activity_parts = status_message.split(": ", 1)
     if len(activity_parts) != 2:
         print(f"Invalid status_message format: {status_message}")
@@ -40,7 +40,6 @@ async def on_ready():
         activity_type_enum = activity_types.get(activity_type, discord.ActivityType.playing)
         activity = discord.Activity(type=activity_type_enum, name=name)
 
-    # Set status based on TOML configuration
     status_type = config["discord_settings"].get("status_ind", "online").lower()
     status_types = {
         "online": discord.Status.online,
@@ -73,12 +72,21 @@ async def set_activity(interaction: discord.Interaction, activity_type: str, nam
         activity_type_enum = activity_types.get(activity_type.lower(), discord.ActivityType.playing)
         activity = discord.Activity(type=activity_type_enum, name=name)
 
-    await bot.change_presence(activity=activity)
-
     # Save the activity status to the configuration file
     config["discord_settings"]["status_message"] = f"{activity_type}: {name}"
     with open(config_path, "w") as f:
         toml.dump(config, f)
+
+    # Set activity without changing the status
+    current_status = config["discord_settings"].get("status_ind", "online").lower()
+    status_types = {
+        "online": discord.Status.online,
+        "idle": discord.Status.idle,
+        "dnd": discord.Status.dnd,
+    }
+    status = status_types.get(current_status, discord.Status.online)
+
+    await bot.change_presence(activity=activity, status=status)
 
     await interaction.response.send_message(f"Activity updated to {activity_type} '{name}'.", ephemeral=True)
 
@@ -101,12 +109,32 @@ async def set_status(interaction: discord.Interaction, status: str):
         await interaction.response.send_message(f"Invalid status: {status}. Please use online, idle, or dnd.", ephemeral=True)
         return
 
-    await bot.change_presence(status=status_types[status_value])
-
     # Save the status to the configuration file
     config["discord_settings"]["status_ind"] = status_value
     with open(config_path, "w") as f:
         toml.dump(config, f)
+
+    # Set status without changing the activity
+    current_activity = config["discord_settings"].get("status_message", "playing: Default Game")
+    activity_parts = current_activity.split(": ", 1)
+    if len(activity_parts) != 2:
+        activity = None
+    else:
+        activity_type, name = activity_parts
+        activity_type = activity_type.lower()  # Convert to lowercase for comparison
+        activity_types = {
+            "playing": discord.ActivityType.playing,
+            "streaming": discord.ActivityType.streaming,
+            "listening": discord.ActivityType.listening,
+            "watching": discord.ActivityType.watching,
+        }
+        if activity_type == "custom":
+            activity = discord.CustomActivity(name=name)
+        else:
+            activity_type_enum = activity_types.get(activity_type, discord.ActivityType.playing)
+            activity = discord.Activity(type=activity_type_enum, name=name)
+
+    await bot.change_presence(activity=activity, status=status_types[status_value])
 
     await interaction.response.send_message(f"Status updated to {status}.", ephemeral=True)
 
