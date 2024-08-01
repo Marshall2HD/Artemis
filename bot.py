@@ -138,6 +138,31 @@ async def set_status(interaction: discord.Interaction, status: str):
 
     await interaction.response.send_message(f"Status updated to {status}.", ephemeral=True)
 
+@bot.tree.command(name="createwebhook", description="Create a WebHook")
+@app_commands.describe(name="The name of the webhook")
+async def createwebhook(interaction: discord.Interaction, name: str):
+    allowed_user_ids = config["discord_settings"].get("admin_ids", [])
+    if interaction.user.id not in allowed_user_ids:
+        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+        return
+
+    # Check if the bot has permission to manage webhooks
+    if not interaction.guild.me.guild_permissions.manage_webhooks:
+        await interaction.response.send_message('The MANAGE_WEBHOOKS permission is required to create a webhook.', ephemeral=True)
+        return
+
+    try:
+        # Create the webhook
+        webhook = await interaction.channel.create_webhook(
+            name=name,
+            avatar=None
+        )
+
+        await interaction.response.send_message(f'Webhook created! {webhook.url}', ephemeral=True)
+    except Exception as e:
+        print(f'Error creating webhook: {e}')
+        await interaction.response.send_message('There was an error creating the webhook.', ephemeral=True)
+
 async def main():
     await bot.start(config["discord_settings"]["bot_token"])
 
