@@ -6,7 +6,7 @@ on:
       - "main"
 
 jobs:
-  docker:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,22 +25,35 @@ jobs:
           driver: cloud
           endpoint: "marshallhd/aes-bot-builder"
 
-      - name: Build and push for linux/amd64
+      - name: Build and cache for linux/amd64
+        id: build-amd64
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64
           tags: |
-            marshallhd/aes-bot:latest
-            marshallhd/aes-bot:${{ github.sha }}
-          outputs: ${{ github.event_name == 'pull_request' && 'type=cacheonly' || 'type=registry,push=true' }}
+            marshallhd/aes-bot:cache-amd64
+          outputs: type=cache
 
-      - name: Build and push for linux/arm64
+      - name: Build and cache for linux/arm64
+        id: build-arm64
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/arm64
           tags: |
+            marshallhd/aes-bot:cache-arm64
+          outputs: type=cache
+
+      - name: Combine and push multi-platform image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          tags: |
             marshallhd/aes-bot:latest
             marshallhd/aes-bot:${{ github.sha }}
-          outputs: ${{ github.event_name == 'pull_request' && 'type=cacheonly' || 'type=registry,push=true' }}
+          build-args: |
+            CACHE_AMD64=${{ steps.build-amd64.outputs.cache }}
+            CACHE_ARM64=${{ steps.build-arm64.outputs.cache }}
+          outputs: type=registry,push=true
