@@ -6,7 +6,7 @@ on:
       - "main"
 
 jobs:
-  setup:
+  docker:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,10 +25,6 @@ jobs:
           driver: cloud
           endpoint: "marshallhd/aes-bot-builder"
 
-  build-amd64:
-    runs-on: ubuntu-latest
-    needs: setup
-    steps:
       - name: Build and push for linux/amd64
         uses: docker/build-push-action@v5
         with:
@@ -39,10 +35,6 @@ jobs:
             marshallhd/aes-bot:${{ github.sha }}
           outputs: ${{ github.event_name == 'pull_request' && 'type=cacheonly' || 'type=registry,push=true' }}
 
-  build-arm64:
-    runs-on: ubuntu-latest
-    needs: setup
-    steps:
       - name: Build and push for linux/arm64
         uses: docker/build-push-action@v5
         with:
