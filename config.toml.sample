@@ -1,4 +1,0 @@
-[discord_settings]
-bot_token = "123456789"
-status_message = "status: status"
-admin_ids = ["123456789,"]

@@ -1,7 +1,6 @@
 services:
-  aes-bot:
-    container_name: AeS-Bot
-    build:
-      context: https://github.com/Marshall2HD/AeSBot.git
-    volumes:
-      - ./docker/discord-bots/AeS-Bot:/data
+  artemis-bot:
+    container_name: Artemis-Bot
+    image: marshallhd/artemis:latest
+    env_file:
+      - config.env

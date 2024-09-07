@@ -1,169 +1,107 @@
 import asyncio
-import toml
+import os
 import discord
 from discord.ext import commands
 from discord import app_commands
 
-# Load the configuration from TOML file
-config_path = "/data/config.toml"
-config = toml.load(config_path)
+class MyBot(commands.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.current_activity = None
+        self.current_status = discord.Status.online
+
+    async def set_activity(self, activity_type: str, name: str):
+        activity_types = {
+            "playing": discord.ActivityType.playing,
+            "streaming": discord.ActivityType.streaming,
+            "listening": discord.ActivityType.listening,
+            "watching": discord.ActivityType.watching,
+            "custom": None
+        }
+        activity_type_enum = activity_types.get(activity_type.lower(), discord.ActivityType.playing)
+
+        if activity_type_enum is None:
+            self.current_activity = discord.CustomActivity(name=name)
+        else:
+            self.current_activity = discord.Activity(type=activity_type_enum, name=name)
+
+        await self.change_presence(activity=self.current_activity, status=self.current_status)
+
+    async def set_status(self, status: str):
+        status_types = {
+            "online": discord.Status.online,
+            "idle": discord.Status.idle,
+            "dnd": discord.Status.dnd
+        }
+        status_value = status.lower()
+        if status_value not in status_types:
+            raise ValueError(f"Invalid status: {status}. Please use online, idle, or dnd.")
+
+        self.current_status = status_types[status_value]
+        await self.change_presence(activity=self.current_activity, status=self.current_status)
+
+# Load configuration from environment variables
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_ACTIVITY_TYPE = os.getenv("BOT_ACTIVITY_TYPE", "playing").lower()
+BOT_ACTIVITY = os.getenv("BOT_ACTIVITY", "with the settings")
+STATUS_IND = os.getenv("STATUS_IND", "online").lower()
+
+# Admin IDs from environment variables (comma-separated)
+ADMIN_IDS = {int(id) for id in os.getenv("ADMIN_IDS", "").split(',') if id.isdigit()}
 
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+bot = MyBot(command_prefix="!", intents=intents, help_command=None)
 
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user.name}')
     await bot.tree.sync()
     print("Commands synced successfully.")
-
-    # Load activity and status from TOML configuration
-    status_message = config["discord_settings"].get("status_message", "playing: Default Game")
-    activity_parts = status_message.split(": ", 1)
-    if len(activity_parts) != 2:
-        print(f"Invalid status_message format: {status_message}")
-        return
-
-    activity_type, name = activity_parts
-    activity_type = activity_type.lower()  # Convert to lowercase for comparison
-    activity_types = {
-        "playing": discord.ActivityType.playing,
-        "streaming": discord.ActivityType.streaming,
-        "listening": discord.ActivityType.listening,
-        "watching": discord.ActivityType.watching,
-    }
-
-    if activity_type == "custom":
-        activity = discord.CustomActivity(name=name)
-    else:
-        activity_type_enum = activity_types.get(activity_type, discord.ActivityType.playing)
-        activity = discord.Activity(type=activity_type_enum, name=name)
-
-    status_type = config["discord_settings"].get("status_ind", "online").lower()
-    status_types = {
-        "online": discord.Status.online,
-        "idle": discord.Status.idle,
-        "dnd": discord.Status.dnd,
-    }
-    status = status_types.get(status_type, discord.Status.online)
-
-    await bot.change_presence(activity=activity, status=status)
+    await bot.set_activity(BOT_ACTIVITY_TYPE, BOT_ACTIVITY)
+    await bot.set_status(STATUS_IND)
 
 @bot.tree.command(name="setactivity", description="Change the bot's activity status")
 @app_commands.describe(activity_type="Type of activity: playing, streaming, listening, watching, custom", name="Name of the activity")
 async def set_activity(interaction: discord.Interaction, activity_type: str, name: str):
-    allowed_user_ids = config["discord_settings"].get("admin_ids", [])
-    if interaction.user.id not in allowed_user_ids:
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
-        return
+    if interaction.user.id not in ADMIN_IDS:
+        return await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
 
-    activity_types = {
-        "playing": discord.ActivityType.playing,
-        "streaming": discord.ActivityType.streaming,
-        "listening": discord.ActivityType.listening,
-        "watching": discord.ActivityType.watching,
-        "custom": None  # Special case for custom activity
-    }
-
-    if activity_type == "custom":
-        activity = discord.CustomActivity(name=name)
-    else:
-        activity_type_enum = activity_types.get(activity_type.lower(), discord.ActivityType.playing)
-        activity = discord.Activity(type=activity_type_enum, name=name)
-
-    # Save the activity status to the configuration file
-    config["discord_settings"]["status_message"] = f"{activity_type}: {name}"
-    with open(config_path, "w") as f:
-        toml.dump(config, f)
-
-    # Set activity without changing the status
-    current_status = config["discord_settings"].get("status_ind", "online").lower()
-    status_types = {
-        "online": discord.Status.online,
-        "idle": discord.Status.idle,
-        "dnd": discord.Status.dnd,
-    }
-    status = status_types.get(current_status, discord.Status.online)
-
-    await bot.change_presence(activity=activity, status=status)
-
-    await interaction.response.send_message(f"Activity updated to {activity_type} '{name}'.", ephemeral=True)
+    try:
+        await bot.set_activity(activity_type, name)
+        await interaction.response.send_message(f"Activity updated to {activity_type} '{name}'.", ephemeral=True)
+    except ValueError as e:
+        await interaction.response.send_message(str(e), ephemeral=True)
 
 @bot.tree.command(name="setstatus", description="Change the bot's status")
 @app_commands.describe(status="Status to set: online, idle, dnd")
 async def set_status(interaction: discord.Interaction, status: str):
-    allowed_user_ids = config["discord_settings"].get("admin_ids", [])
-    if interaction.user.id not in allowed_user_ids:
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
-        return
+    if interaction.user.id not in ADMIN_IDS:
+        return await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
 
-    status_types = {
-        "online": discord.Status.online,
-        "idle": discord.Status.idle,
-        "dnd": discord.Status.dnd,
-    }
-
-    status_value = status.lower()
-    if status_value not in status_types:
-        await interaction.response.send_message(f"Invalid status: {status}. Please use online, idle, or dnd.", ephemeral=True)
-        return
-
-    # Save the status to the configuration file
-    config["discord_settings"]["status_ind"] = status_value
-    with open(config_path, "w") as f:
-        toml.dump(config, f)
-
-    # Set status without changing the activity
-    current_activity = config["discord_settings"].get("status_message", "playing: Default Game")
-    activity_parts = current_activity.split(": ", 1)
-    if len(activity_parts) != 2:
-        activity = None
-    else:
-        activity_type, name = activity_parts
-        activity_type = activity_type.lower()  # Convert to lowercase for comparison
-        activity_types = {
-            "playing": discord.ActivityType.playing,
-            "streaming": discord.ActivityType.streaming,
-            "listening": discord.ActivityType.listening,
-            "watching": discord.ActivityType.watching,
-        }
-        if activity_type == "custom":
-            activity = discord.CustomActivity(name=name)
-        else:
-            activity_type_enum = activity_types.get(activity_type, discord.ActivityType.playing)
-            activity = discord.Activity(type=activity_type_enum, name=name)
-
-    await bot.change_presence(activity=activity, status=status_types[status_value])
-
-    await interaction.response.send_message(f"Status updated to {status}.", ephemeral=True)
+    try:
+        await bot.set_status(status)
+        await interaction.response.send_message(f"Status updated to {status}.", ephemeral=True)
+    except ValueError as e:
+        await interaction.response.send_message(str(e), ephemeral=True)
 
 @bot.tree.command(name="createwebhook", description="Create a WebHook")
 @app_commands.describe(name="The name of the webhook")
 async def createwebhook(interaction: discord.Interaction, name: str):
-    allowed_user_ids = config["discord_settings"].get("admin_ids", [])
-    if interaction.user.id not in allowed_user_ids:
-        await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
-        return
+    if interaction.user.id not in ADMIN_IDS:
+        return await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
 
-    # Check if the bot has permission to manage webhooks
     if not interaction.guild.me.guild_permissions.manage_webhooks:
-        await interaction.response.send_message('The MANAGE_WEBHOOKS permission is required to create a webhook.', ephemeral=True)
-        return
+        return await interaction.response.send_message('The MANAGE_WEBHOOKS permission is required to create a webhook.', ephemeral=True)
 
     try:
-        # Create the webhook
-        webhook = await interaction.channel.create_webhook(
-            name=name,
-            avatar=None
-        )
-
+        webhook = await interaction.channel.create_webhook(name=name)
         await interaction.response.send_message(f'Webhook created! {webhook.url}', ephemeral=True)
     except Exception as e:
         print(f'Error creating webhook: {e}')
         await interaction.response.send_message('There was an error creating the webhook.', ephemeral=True)
 
 async def main():
-    await bot.start(config["discord_settings"]["bot_token"])
+    await bot.start(BOT_TOKEN)
 
 asyncio.run(main())
